@@ -1,48 +1,66 @@
-//
-//  ItemStore.swift
-//  Lootlogger
-//
-//  Created by Amath Benoit Gaye on 11/7/25.
-//
+// ItemStore.swift
 
 import UIKit
 
 class ItemStore {
 
-    var allItems = [Item]()
+    
+    var allItems = [Item]() 
+    var expensiveItems = [Item]() // For items > $50
+    var cheapItems = [Item]()     // For items <= $50
+    
     
     @discardableResult func createItem() -> Item {
         let newItem = Item(random: true)
-
-        allItems.append(newItem)
+        
+        // Append to the correct section array
+        if newItem.valueInDollars > 50 {
+            expensiveItems.append(newItem)
+        } else {
+            cheapItems.append(newItem)
+        }
+        
+        
 
         return newItem
-        
-        
     }
+    
     
     func removeItem(item: Item) {
-        // Check if the item exists in the array
-        if let index = allItems.firstIndex(of: item) {
-            // Remove it from the allItems array
-            allItems.remove(at: index)
+        // Check and remove from the expensive array first
+        if let index = expensiveItems.firstIndex(of: item) {
+            expensiveItems.remove(at: index)
         }
+        // If not found in expensive, check and remove from the cheap array
+        else if let index = cheapItems.firstIndex(of: item) {
+            cheapItems.remove(at: index)
+        }
+        
     }
     
-    func moveItem(from fromIndex: Int, to toIndex: Int) {
-        if fromIndex == toIndex {
-            return
-        }
-
-        // Get reference to object being moved so you can reinsert it
-        let movedItem = allItems[fromIndex]
-
-        // Remove item from array
-        allItems.remove(at: fromIndex)
-
-        // Insert item in array at new location
-        allItems.insert(movedItem, at: toIndex)
+    
+    func item(for section: Int) -> [Item] {
+        return section == 0 ? expensiveItems : cheapItems
     }
     
+    
+    func moveItem(from sourceIndexPath: IndexPath, to destinationIndexPath: IndexPath) {
+        let itemToMove: Item
 
+        // 1. Get the item and remove it from the source array
+        if sourceIndexPath.section == 0 {
+            itemToMove = expensiveItems[sourceIndexPath.row]
+            expensiveItems.remove(at: sourceIndexPath.row)
+        } else {
+            itemToMove = cheapItems[sourceIndexPath.row]
+            cheapItems.remove(at: sourceIndexPath.row)
+        }
+
+        // 2. Insert the item into the destination array
+        if destinationIndexPath.section == 0 {
+            expensiveItems.insert(itemToMove, at: destinationIndexPath.row)
+        } else {
+            cheapItems.insert(itemToMove, at: destinationIndexPath.row)
+        }
+    }
 }

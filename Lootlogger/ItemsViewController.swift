@@ -1,101 +1,92 @@
-//
-//  ItemsViewController.swift
-//  Lootlogger
-//
-//  Created by Amath Benoit Gaye on 11/7/25.
-//
-
 import UIKit
 
 class ItemsViewController: UITableViewController {
     
     var itemStore: ItemStore!
     
+    // --- Data Source Methods ---
     
-
+    override func numberOfSections(in tableView: UITableView) -> Int {
+        // Section 0: Expensive items, Section 1: Cheap items
+        return 2
+    }
     
     override func tableView(_ tableView: UITableView,
                             numberOfRowsInSection section: Int) -> Int {
-        return itemStore.allItems.count
-        
+        // Use the helper function to get the correct array size
+        let items = itemStore.item(for: section)
+        return items.count
     }
     
-    @IBAction func addNewItem(_ sender: UIButton) {
-            
-        
-        let newItem = itemStore.createItem()
-            
-            // The book's original implementation:
-            // This method of finding the index is often used in the book's context,
-            // where the new item is guaranteed to be added at the end.
-            
-            // Figure out where that item is in the array
-            if let index = itemStore.allItems.firstIndex(of: newItem) {
-                let indexPath = IndexPath(row: index, section: 0)
-                
-                // 2. Insert this new row into the table view
-                // The table view will now see a matching count in the data source
-                tableView.insertRows(at: [indexPath], with: .automatic)
-            }
-        
+    override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
+        if section == 0 {
+            return "Items Worth More Than $50"
+        } else {
+            return "Items Worth $50 or Less"
         }
-        
-    
-
-    @IBAction func toggleEditingMode(_ sender: UIButton) {
-
-        
-        // If you are currently in editing mode...
-            if isEditing {
-                // Change text of button to inform user of state
-                sender.setTitle("Edit", for: .normal)
-                
-                // Turn off editing mode by calling the UIViewController method
-                setEditing(false, animated: true)
-            } else {
-                // Change text of button to inform user of state
-                sender.setTitle("Done", for: .normal)
-                
-                // Enter editing mode by calling the UIViewController method
-                setEditing(true, animated: true)
-            }
-        }
-    
-        
-    
+    }
     
     override func tableView(_ tableView: UITableView,
-            cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        //Get a new or recycled cell
+                            cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        
         let cell = tableView.dequeueReusableCell(withIdentifier: "UITableViewCell",
-         for: indexPath)
-
-        // Set the text on the cell with the description of the item
-        // that is at the nth index of items, where n = row this cell
-        // will appear in on the table view
-        let item = itemStore.allItems[indexPath.row]
-
+                                                 for: indexPath)
+        
+        // Get the correct array based on the section
+        let items = itemStore.item(for: indexPath.section)
+        let item = items[indexPath.row]
+        
         cell.textLabel?.text = item.name
         cell.detailTextLabel?.text = "$\(item.valueInDollars)"
-
+        
         return cell
     }
     
+    // --- Actions ---
     
-    // In ItemsViewController.swift (This logic looks correct)
+    @IBAction func addNewItem(_ sender: UIButton) {
+        let newItem = itemStore.createItem()
+        
+        // Determine the target section based on item value
+        let targetSection = newItem.valueInDollars > 50 ? 0 : 1
+        
+        // Get the items array for the target section
+        let itemsInTargetSection = itemStore.item(for: targetSection)
+        
+        // Find the index of the new item within that specific section array
+        if let index = itemsInTargetSection.firstIndex(of: newItem) {
+            let indexPath = IndexPath(row: index, section: targetSection)
+            
+            // Insert the new row into the table view at the correct section
+            tableView.insertRows(at: [indexPath], with: .automatic)
+        }
+    }
+    
+    @IBAction func toggleEditingMode(_ sender: UIButton) {
+        if isEditing {
+            sender.setTitle("Edit", for: .normal)
+            setEditing(false, animated: true)
+        } else {
+            sender.setTitle("Done", for: .normal)
+            setEditing(true, animated: true)
+        }
+    }
+    
+    // --- Editing Methods ---
+    
     override func tableView(_ tableView: UITableView,
                             commit editingStyle: UITableViewCell.EditingStyle,
                             forRowAt indexPath: IndexPath) {
         
-        // If the table view is asking to commit a delete command...
         if editingStyle == .delete {
-            // 1. Get the Item to be removed from the store
-            let item = itemStore.allItems[indexPath.row]
+            // Get the item from the correct section array
+            let items = itemStore.item(for: indexPath.section)
+            let item = items[indexPath.row]
             
-            // 2. Remove the Item from the ItemStore (This requires the method added in step 1)
-            itemStore.removeItem(item: item) // ERROR OCCURS HERE
+            // Remove the Item from the ItemStore
+            itemStore.removeItem(item: item)
             
-            // 3. Remove the corresponding row from the table view (the UI)
+            // Remove the corresponding row from the table view
             tableView.deleteRows(at: [indexPath], with: .automatic)
         }
     }
@@ -103,8 +94,8 @@ class ItemsViewController: UITableViewController {
     override func tableView(_ tableView: UITableView,
                             moveRowAt sourceIndexPath: IndexPath,
                             to destinationIndexPath: IndexPath) {
-        // Update the model
-        itemStore.moveItem(from: sourceIndexPath.row, to: destinationIndexPath.row)
+        
+        
+        itemStore.moveItem(from: sourceIndexPath, to: destinationIndexPath)
     }
-
 }
